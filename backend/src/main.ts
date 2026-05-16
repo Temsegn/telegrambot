@@ -15,7 +15,8 @@ async function bootstrap() {
       'https://telegrambot-1-b7u3.onrender.com',
       'https://telegrambot-dppa.onrender.com',
       'https://dejenrewards-miniapp.onrender.com',
-      'https://dejenrewards-admin.onrender.com'
+      'https://dejenrewards-admin.onrender.com',
+      'https://telegrambot2-vaz8.onrender.com'
     ],
     credentials: true,
   });
