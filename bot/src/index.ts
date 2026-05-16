@@ -3,9 +3,9 @@ import axios from 'axios';
 import * as path from 'path';
 
 // ── Hardcoded config for testing ──────────────────────────────────────────────
-const BOT_TOKEN   = '8878260053:AAFnUgkU_hjJRedU2SJq_a81proq7gwvB0U';
+const BOT_TOKEN = '8878260053:AAFnUgkU_hjJRedU2SJq_a81proq7gwvB0U';
 const BACKEND_URL = 'https://telegrambot-backend-37gb.onrender.com';
-const CHANNEL_ID  = '@userdejendejen';
+const CHANNEL_ID = '@userdejendejen';
 const MINI_APP_URL = 'https://telegrambot-1-b7u3.onrender.com';
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -14,7 +14,7 @@ const WELCOME_IMG = path.resolve(__dirname, '../assets/welcome.png');
 
 // --- Health Check Server — must always bind for Render web service ---
 const http = require('http');
-const PORT = process.env.PORT || 10000;
+const PORT = 10000;
 http.createServer((req: any, res: any) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('Bot is running!');
@@ -71,10 +71,10 @@ function getRank(balance: number) {
 // ─── /start ──────────────────────────────────────────────────────────────────
 bot.start(async (ctx) => {
   const telegramId = BigInt(ctx.from.id);
-  const username   = ctx.from.username;
-  const firstName  = ctx.from.first_name || 'Friend';
-  const lastName   = ctx.from.last_name;
-  const botUser    = ctx.botInfo.username;
+  const username = ctx.from.username;
+  const firstName = ctx.from.first_name || 'Friend';
+  const lastName = ctx.from.last_name;
+  const botUser = ctx.botInfo.username;
 
   const referralCode = ctx.message.text.split(' ')[1];
 
@@ -100,37 +100,37 @@ bot.start(async (ctx) => {
     }
 
     // 3. Fetch stats
-    const user  = await getUser(telegramId);
+    const user = await getUser(telegramId);
     const stats = await getReferralStats(telegramId);
     const isMember = await checkChannelMembership(telegramId);
 
     if (isMember) {
-      await axios.post(`${BACKEND_URL}/referrals/join/${telegramId}`).catch(() => {});
+      await axios.post(`${BACKEND_URL}/referrals/join/${telegramId}`).catch(() => { });
     }
 
-    const balance      = user?.walletBalance ?? 0;
+    const balance = user?.walletBalance ?? 0;
     const totalInvited = stats?.totalInvited ?? 0;
-    const activeRefs   = stats?.activeMembers ?? 0;
-    const rank         = getRank(balance);
-    const refLink      = user?.referralCode
+    const activeRefs = stats?.activeMembers ?? 0;
+    const rank = getRank(balance);
+    const refLink = user?.referralCode
       ? `https://t.me/${botUser}?start=${user.referralCode}`
       : null;
 
     // 4. Build message — everything in one view
     const caption = isMember
       ? `🎉 *Welcome back, ${firstName}!*\n\n` +
-        `━━━━━━━━━━━━━━━━━━\n` +
-        `🏆 Rank:  ${rank}\n` +
-        `💰 Balance:  ${balance} pts\n` +
-        `👥 Referrals:  ${totalInvited} friends\n` +
-        `✅ Active:  ${activeRefs} members\n` +
-        `━━━━━━━━━━━━━━━━━━\n\n` +
-        (refLink ? `🔗 *Your Referral Link:*\n\`${refLink}\`\n\n` : '') +
-        `Share & earn *5 pts* per friend! 🚀`
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `🏆 Rank:  ${rank}\n` +
+      `💰 Balance:  ${balance} pts\n` +
+      `👥 Referrals:  ${totalInvited} friends\n` +
+      `✅ Active:  ${activeRefs} members\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      (refLink ? `🔗 *Your Referral Link:*\n\`${refLink}\`\n\n` : '') +
+      `Share & earn *5 pts* per friend! 🚀`
 
       : `👋 *Welcome to DejenRewards, ${firstName}!*\n\n` +
-        `Join our channel to activate your account\n` +
-        `and start earning rewards! 🎁`;
+      `Join our channel to activate your account\n` +
+      `and start earning rewards! 🎁`;
 
     // 5. Buttons — all actions, no check button
     const shareText = refLink ? encodeURIComponent(`💎 Join DejenRewards and earn points!\n${refLink}`) : '';
@@ -139,15 +139,15 @@ bot.start(async (ctx) => {
 
     const buttons = isMember
       ? Markup.inlineKeyboard([
-          ...(channelUrl ? [[Markup.button.url('📢 Join Channel', channelUrl)]] : []),
-          ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
-          [Markup.button.callback('💰 My Balance', 'show_balance')],
-          ...(refLink ? [[Markup.button.url('📤 Share Referral Link', `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${shareText}`)]] : []),
-        ])
+        ...(channelUrl ? [[Markup.button.url('📢 Join Channel', channelUrl)]] : []),
+        ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
+        [Markup.button.callback('💰 My Balance', 'show_balance')],
+        ...(refLink ? [[Markup.button.url('📤 Share Referral Link', `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${shareText}`)]] : []),
+      ])
       : Markup.inlineKeyboard([
-          ...(channelUrl ? [[Markup.button.url('📢 Join Channel', channelUrl)]] : []),
-          ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
-        ]);
+        ...(channelUrl ? [[Markup.button.url('📢 Join Channel', channelUrl)]] : []),
+        ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
+      ]);
 
     // 6. Send with image
     try {
@@ -177,15 +177,15 @@ bot.start(async (ctx) => {
 bot.action('show_balance', async (ctx) => {
   await ctx.answerCbQuery();
   const telegramId = BigInt(ctx.from!.id);
-  const botUser    = ctx.botInfo.username;
+  const botUser = ctx.botInfo.username;
 
   const [user, stats] = await Promise.all([getUser(telegramId), getReferralStats(telegramId)]);
 
   if (!user) return ctx.reply('❌ Not registered. Send /start first.');
 
-  const balance    = user.walletBalance ?? 0;
-  const rank       = getRank(balance);
-  const refLink    = `https://t.me/${botUser}?start=${user.referralCode}`;
+  const balance = user.walletBalance ?? 0;
+  const rank = getRank(balance);
+  const refLink = `https://t.me/${botUser}?start=${user.referralCode}`;
 
   const msg =
     `💰 *Your Balance*\n\n` +
@@ -215,13 +215,13 @@ bot.action('show_balance', async (ctx) => {
 // ─── /referral command ────────────────────────────────────────────────────────
 bot.command('referral', async (ctx) => {
   const telegramId = BigInt(ctx.from.id);
-  const botUser    = ctx.botInfo.username;
-  const user       = await getUser(telegramId);
+  const botUser = ctx.botInfo.username;
+  const user = await getUser(telegramId);
 
   if (!user) return ctx.reply('❌ Send /start first.');
 
-  const refLink   = `https://t.me/${botUser}?start=${user.referralCode}`;
-  const stats     = await getReferralStats(telegramId);
+  const refLink = `https://t.me/${botUser}?start=${user.referralCode}`;
+  const stats = await getReferralStats(telegramId);
   const shareText = encodeURIComponent(`💎 Join DejenRewards!\n${refLink}`);
 
   await ctx.reply(
@@ -261,25 +261,25 @@ bot.help((ctx) => {
 bot.on('chat_member', async (ctx) => {
   const { new_chat_member, old_chat_member } = ctx.chatMember;
   const telegramId = BigInt(new_chat_member.user.id);
-  const tgUser     = new_chat_member.user;
-  const oldStatus  = old_chat_member.status;
-  const newStatus  = new_chat_member.status;
+  const tgUser = new_chat_member.user;
+  const oldStatus = old_chat_member.status;
+  const newStatus = new_chat_member.status;
 
   try {
     if (oldStatus === 'left' && ['member', 'administrator', 'creator'].includes(newStatus)) {
       // User just joined
-      await axios.post(`${BACKEND_URL}/referrals/join/${telegramId}`).catch(() => {});
+      await axios.post(`${BACKEND_URL}/referrals/join/${telegramId}`).catch(() => { });
       console.log(`✅ User ${telegramId} joined the channel`);
 
       const [user, stats] = await Promise.all([getUser(telegramId), getReferralStats(telegramId)]);
-      const botUser      = ctx.botInfo.username;
-      const firstName    = tgUser.first_name || 'Friend';
-      const balance      = user?.walletBalance ?? 0;
+      const botUser = ctx.botInfo.username;
+      const firstName = tgUser.first_name || 'Friend';
+      const balance = user?.walletBalance ?? 0;
       const totalInvited = stats?.totalInvited ?? 0;
-      const activeRefs   = stats?.activeMembers ?? 0;
-      const rank         = getRank(balance);
-      const refLink      = user?.referralCode ? `https://t.me/${botUser}?start=${user.referralCode}` : null;
-      const shareText    = refLink ? encodeURIComponent(`💎 Join DejenRewards!\n${refLink}`) : '';
+      const activeRefs = stats?.activeMembers ?? 0;
+      const rank = getRank(balance);
+      const refLink = user?.referralCode ? `https://t.me/${botUser}?start=${user.referralCode}` : null;
+      const shareText = refLink ? encodeURIComponent(`💎 Join DejenRewards!\n${refLink}`) : '';
 
       const msg =
         `🎊 *Welcome, ${firstName}!*\n\n` +
@@ -304,7 +304,7 @@ bot.on('chat_member', async (ctx) => {
       }).catch(err => console.warn('Could not DM user:', err.message));
 
     } else if (['member', 'administrator', 'creator'].includes(oldStatus) && newStatus === 'left') {
-      await axios.post(`${BACKEND_URL}/referrals/leave/${telegramId}`).catch(() => {});
+      await axios.post(`${BACKEND_URL}/referrals/leave/${telegramId}`).catch(() => { });
       console.log(`🚪 User ${telegramId} left the channel`);
     }
   } catch (error) {
@@ -331,5 +331,5 @@ bot.launch({
   process.exit(1);
 });
 
-process.once('SIGINT',  () => bot.stop('SIGINT'));
+process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
