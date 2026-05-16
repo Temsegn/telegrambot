@@ -35,8 +35,8 @@ interface Referral {
   activeStatus: boolean;
 }
 
-const BACKEND_URL = 'https://telegrambot-backend-37gb.onrender.com';
-const BOT_USERNAME = 'userdejenbot';
+
+
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -69,7 +69,7 @@ export default function App() {
       }
 
       // Fetch user data
-      const userResponse = await axios.get(`${BACKEND_URL}/users/${telegramId}`);
+      const userResponse = await axios.get(`${'https://telegrambot-backend-37gb.onrender.com'}/users/${telegramId}`);
       if (userResponse.data?.error) {
         setLoading(false);
         return;
@@ -77,11 +77,11 @@ export default function App() {
       setUser(userResponse.data);
 
       // Fetch referral stats
-      const statsResponse = await axios.get(`${BACKEND_URL}/referrals/stats/${telegramId}`);
+      const statsResponse = await axios.get(`${'https://telegrambot-backend-37gb.onrender.com'}/referrals/stats/${telegramId}`);
       setReferralStats(statsResponse.data);
 
       // Fetch referrals
-      const referralsResponse = await axios.get(`${BACKEND_URL}/referrals/user/${telegramId}`);
+      const referralsResponse = await axios.get(`${'https://telegrambot-backend-37gb.onrender.com'}/referrals/user/${telegramId}`);
       setReferrals(referralsResponse.data);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -92,7 +92,7 @@ export default function App() {
 
   const copyReferralLink = () => {
     if (!user) return;
-    const link = `https://t.me/${BOT_USERNAME}?start=${user.referralCode}`;
+    const link = `https://t.me/${'userdejenbot'}?start=${user.referralCode}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -244,7 +244,7 @@ export default function App() {
                 <input
                   type="text"
                   readOnly
-                  value={`https://t.me/${BOT_USERNAME}?start=${user.referralCode}`}
+                  value={`https://t.me/${'userdejenbot'}?start=${user.referralCode}`}
                   className="flex-1 px-4 py-2 border rounded-lg bg-gray-50 text-sm"
                 />
                 <button

@@ -140,13 +140,13 @@ bot.start(async (ctx) => {
     const buttons = isMember
       ? Markup.inlineKeyboard([
         ...(channelUrl ? [[Markup.button.url('📢 Join Channel', channelUrl)]] : []),
-        ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
+        ...(MINI_APP_URL ? [[Markup.button.webApp('🚀 Open Mini App', MINI_APP_URL)]] : []),
         [Markup.button.callback('💰 My Balance', 'show_balance')],
         ...(refLink ? [[Markup.button.url('📤 Share Referral Link', `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${shareText}`)]] : []),
       ])
       : Markup.inlineKeyboard([
         ...(channelUrl ? [[Markup.button.url('📢 Join Channel', channelUrl)]] : []),
-        ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
+        ...(MINI_APP_URL ? [[Markup.button.webApp('🚀 Open Mini App', MINI_APP_URL)]] : []),
       ]);
 
     // 6. Send with image
@@ -207,7 +207,7 @@ bot.action('show_balance', async (ctx) => {
     parse_mode: 'Markdown',
     ...Markup.inlineKeyboard([
       [Markup.button.url('📤 Share Referral Link', `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${shareText}`)],
-      ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
+      ...(MINI_APP_URL ? [[Markup.button.webApp('🚀 Open Mini App', MINI_APP_URL)]] : []),
     ]),
   });
 });
@@ -251,7 +251,7 @@ bot.help((ctx) => {
       parse_mode: 'Markdown',
       ...Markup.inlineKeyboard([
         ...(CHANNEL_ID ? [[Markup.button.url('📢 Join Channel', `https://t.me/${CHANNEL_ID.replace('@', '')}`)]] : []),
-        ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
+        ...(MINI_APP_URL ? [[Markup.button.webApp('🚀 Open Mini App', MINI_APP_URL)]] : []),
       ]),
     }
   );
@@ -297,7 +297,7 @@ bot.on('chat_member', async (ctx) => {
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([
           ...(CHANNEL_ID ? [[Markup.button.url('📢 Join Channel', `https://t.me/${CHANNEL_ID.replace('@', '')}`)]] : []),
-          ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
+          ...(MINI_APP_URL ? [[Markup.button.webApp('🚀 Open Mini App', MINI_APP_URL)]] : []),
           [Markup.button.callback('💰 My Balance', 'show_balance')],
           ...(refLink ? [[Markup.button.url('📤 Share Referral Link', `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${shareText}`)]] : []),
         ]),

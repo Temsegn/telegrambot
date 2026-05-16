@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 
-const BACKEND_URL = 'https://telegrambot-backend-37gb.onrender.com'
+
 
 interface User {
   id: string
@@ -42,7 +42,7 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get(`${BACKEND_URL}/users/all`)
+      const res = await axios.get(`${'https://telegrambot-backend-37gb.onrender.com'}/users/all`)
       setUsers(res.data || [])
     } catch (error) {
       console.error('Error fetching data:', error)
