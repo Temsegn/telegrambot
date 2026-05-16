@@ -1,28 +1,28 @@
 import { Telegraf, Markup } from 'telegraf';
 import axios from 'axios';
-import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-dotenv.config();
-
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
-const CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
-const MINI_APP_URL = process.env.MINI_APP_URL || '';
-
-if (!BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN is required');
+// ── Hardcoded config for testing ──────────────────────────────────────────────
+const BOT_TOKEN   = '8878260053:AAFnUgkU_hjJRedU2SJq_a81proq7gwvB0U';
+const BACKEND_URL = 'https://telegrambot-backend-37gb.onrender.com';
+const CHANNEL_ID  = '@userdejendejen';
+const MINI_APP_URL = 'https://telegrambot-1-b7u3.onrender.com';
+// ─────────────────────────────────────────────────────────────────────────────
 
 const bot = new Telegraf(BOT_TOKEN);
 const WELCOME_IMG = path.resolve(__dirname, '../assets/welcome.png');
 
-// --- Health Check Server for Render Web Service ---
-const http = require('http');
-const PORT = process.env.PORT || 10000;
-http.createServer((req: any, res: any) => {
-  res.writeHead(200);
-  res.end('Bot is running!');
-}).listen(PORT);
-console.log(`Health check server listening on port ${PORT}`);
+// --- Health Check Server (only when PORT is provided, i.e. web service mode) ---
+const PORT = process.env.PORT;
+if (PORT) {
+  const http = require('http');
+  http.createServer((req: any, res: any) => {
+    res.writeHead(200);
+    res.end('Bot is running!');
+  }).listen(PORT, () => {
+    console.log(`Health check server listening on port ${PORT}`);
+  });
+}
 // --------------------------------------------------
 
 bot.use((ctx, next) => {
@@ -137,15 +137,17 @@ bot.start(async (ctx) => {
     // 5. Buttons — all actions, no check button
     const shareText = refLink ? encodeURIComponent(`💎 Join DejenRewards and earn points!\n${refLink}`) : '';
 
+    const channelUrl = CHANNEL_ID ? `https://t.me/${CHANNEL_ID.replace('@', '')}` : null;
+
     const buttons = isMember
       ? Markup.inlineKeyboard([
-          [Markup.button.url('📢 Join Channel', `https://t.me/${CHANNEL_ID?.replace('@', '')}`)],
+          ...(channelUrl ? [[Markup.button.url('📢 Join Channel', channelUrl)]] : []),
           ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
           [Markup.button.callback('💰 My Balance', 'show_balance')],
           ...(refLink ? [[Markup.button.url('📤 Share Referral Link', `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${shareText}`)]] : []),
         ])
       : Markup.inlineKeyboard([
-          [Markup.button.url('📢 Join Channel', `https://t.me/${CHANNEL_ID?.replace('@', '')}`)],
+          ...(channelUrl ? [[Markup.button.url('📢 Join Channel', channelUrl)]] : []),
           ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
         ]);
 
@@ -250,7 +252,7 @@ bot.help((ctx) => {
     {
       parse_mode: 'Markdown',
       ...Markup.inlineKeyboard([
-        [Markup.button.url('📢 Join Channel', `https://t.me/${CHANNEL_ID?.replace('@', '')}`)],
+        ...(CHANNEL_ID ? [[Markup.button.url('📢 Join Channel', `https://t.me/${CHANNEL_ID.replace('@', '')}`)]] : []),
         ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
       ]),
     }
@@ -296,7 +298,7 @@ bot.on('chat_member', async (ctx) => {
       await ctx.telegram.sendMessage(Number(telegramId), msg, {
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([
-          [Markup.button.url('📢 Join Channel', `https://t.me/${CHANNEL_ID?.replace('@', '')}`)],
+          ...(CHANNEL_ID ? [[Markup.button.url('📢 Join Channel', `https://t.me/${CHANNEL_ID.replace('@', '')}`)]] : []),
           ...(MINI_APP_URL ? [[Markup.button.url('🚀 Open Mini App', MINI_APP_URL)]] : []),
           [Markup.button.callback('💰 My Balance', 'show_balance')],
           ...(refLink ? [[Markup.button.url('📤 Share Referral Link', `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${shareText}`)]] : []),
@@ -313,8 +315,23 @@ bot.on('chat_member', async (ctx) => {
 });
 
 // ─── Launch ───────────────────────────────────────────────────────────────────
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+  process.exit(1);
+});
+
 bot.launch({
   allowedUpdates: ['message', 'callback_query', 'chat_member'],
-}).then(() => console.log('🤖 Bot launched!'));
+}).then(() => {
+  console.log('🤖 Bot launched successfully!');
+}).catch((err) => {
+  console.error('❌ Failed to launch bot:', err);
+  process.exit(1);
+});
+
 process.once('SIGINT',  () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));

@@ -43,14 +43,15 @@ services:
         # backend service URL (not the bot URL)
         value: "https://telegrambot-backend-37gb.onrender.com"
 
-  # ─── 3. Telegram Bot (Background Worker) ─────────────────────────────────
-  - type: worker
+  # ─── 3. Telegram Bot (Web Service with long-polling + health-check) ──────────
+  - type: web
     name: dejenrewards-bot
     env: node
     region: oregon
     rootDir: bot
     buildCommand: npm install && npm run build
     startCommand: npm run start
+    healthCheckPath: /
     envVars:
       - key: NODE_ENV
         value: production
