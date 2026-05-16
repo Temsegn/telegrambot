@@ -11,6 +11,11 @@ export class ReferralsService {
   ) {}
 
   async createReferral(inviterTelegramId: bigint, invitedTelegramId: bigint) {
+    // Prevent self-referral
+    if (inviterTelegramId === invitedTelegramId) {
+      throw new ConflictException('Cannot refer yourself');
+    }
+
     // Check if invited user already has an inviter
     const existingReferral = await this.prisma.referral.findUnique({
       where: { invitedId: invitedTelegramId.toString() },
