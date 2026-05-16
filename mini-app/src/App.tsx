@@ -58,7 +58,9 @@ export default function App() {
   const fetchData = async () => {
     try {
       const tg = window.Telegram?.WebApp;
-      const telegramId = tg?.initDataUnsafe?.user?.id;
+      // Use Telegram user ID if available, else fall back to URL param for browser testing
+      const telegramId = tg?.initDataUnsafe?.user?.id
+        || new URLSearchParams(window.location.search).get('telegramId');
 
       if (!telegramId) {
         setLoading(false);
@@ -67,6 +69,10 @@ export default function App() {
 
       // Fetch user data
       const userResponse = await axios.get(`${BACKEND_URL}/users/${telegramId}`);
+      if (userResponse.data?.error) {
+        setLoading(false);
+        return;
+      }
       setUser(userResponse.data);
 
       // Fetch referral stats
@@ -116,10 +122,15 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)' }}>
         <div className="text-center">
-          <p className="text-red-500 mb-4">Unable to load user data</p>
-          <p className="text-gray-600">Please open this app from Telegram</p>
+          <div style={{ fontSize: 64, marginBottom: 16 }}>🤖</div>
+          <p style={{ color: '#f87171', marginBottom: 8, fontWeight: 600, fontSize: 18 }}>Unable to load user data</p>
+          <p style={{ color: '#94a3b8', marginBottom: 24, fontSize: 14 }}>Please open this app from Telegram</p>
+          <button onClick={fetchData}
+            style={{ padding: '10px 24px', borderRadius: 10, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', border: 'none', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}>
+            🔄 Retry
+          </button>
         </div>
       </div>
     );

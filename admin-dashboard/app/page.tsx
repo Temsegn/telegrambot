@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Users, Wallet, TrendingUp, AlertTriangle, BarChart3, Settings } from 'lucide-react'
 import axios from 'axios'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'
@@ -15,33 +14,36 @@ interface User {
   isActive: boolean
   status: string
   referralsGiven: any[]
+  createdAt: string
 }
 
-interface SystemStats {
-  totalUsers: number
-  totalPointsIssued: number
-  totalPointsRedeemed: number
-  activePoints: number
+interface Announcement {
+  id: string
+  title: string
+  body: string
+  type: 'info' | 'success' | 'warning'
+  createdAt: string
 }
+
+const MOCK_ANNOUNCEMENTS: Announcement[] = []
+
+type Tab = 'overview' | 'users' | 'leaderboard' | 'content' | 'fraud'
 
 export default function Dashboard() {
   const [users, setUsers] = useState<User[]>([])
-  const [stats, setStats] = useState<SystemStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'leaderboard' | 'fraud'>('overview')
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const [search, setSearch] = useState('')
+  const [announcements, setAnnouncements] = useState<Announcement[]>(MOCK_ANNOUNCEMENTS)
+  const [newAnn, setNewAnn] = useState({ title: '', body: '', type: 'info' as Announcement['type'] })
+  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  useEffect(() => { fetchData() }, [])
 
   const fetchData = async () => {
     try {
-      const [usersResponse, statsResponse] = await Promise.all([
-        axios.get(`${BACKEND_URL}/users/all`),
-        axios.get(`${BACKEND_URL}/wallet/stats`)
-      ])
-      setUsers(usersResponse.data)
-      setStats(statsResponse.data)
+      const res = await axios.get(`${BACKEND_URL}/users/all`)
+      setUsers(res.data || [])
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -49,238 +51,176 @@ export default function Dashboard() {
     }
   }
 
+  const totalPoints = users.reduce((s, u) => s + (u.walletBalance || 0), 0)
+  const activeUsers = users.filter(u => u.isActive).length
+  const totalReferrals = users.reduce((s, u) => s + (u.referralsGiven?.length || 0), 0)
+
+  const filtered = users.filter(u =>
+    (u.firstName || '').toLowerCase().includes(search.toLowerCase()) ||
+    (u.username || '').toLowerCase().includes(search.toLowerCase()) ||
+    (u.telegramId || '').includes(search)
+  )
+
+  const handleCreateAnn = () => {
+    if (!newAnn.title.trim() || !newAnn.body.trim()) return
+    setSaving(true)
+    setTimeout(() => {
+      setAnnouncements(prev => [{
+        id: Date.now().toString(),
+        ...newAnn,
+        createdAt: new Date().toISOString()
+      }, ...prev])
+      setNewAnn({ title: '', body: '', type: 'info' })
+      setSaving(false)
+    }, 600)
+  }
+
+  const handleDeleteAnn = (id: string) => {
+    setAnnouncements(prev => prev.filter(a => a.id !== id))
+  }
+
+  const tabs: { key: Tab; label: string; icon: string }[] = [
+    { key: 'overview',   label: 'Overview',    icon: '📊' },
+    { key: 'users',      label: 'Users',        icon: '👥' },
+    { key: 'leaderboard',label: 'Leaderboard',  icon: '🏆' },
+    { key: 'content',    label: 'Content',      icon: '📝' },
+    { key: 'fraud',      label: 'Fraud',        icon: '🛡️' },
+  ]
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f0f1a' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 56, height: 56, border: '4px solid #6366f1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
+          <p style={{ marginTop: 16, color: '#a0a0c0' }}>Loading Dashboard...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{ minHeight: '100vh', background: '#0f0f1a', color: '#e0e0f0', fontFamily: "'Inter', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
       {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <h1 className="text-2xl font-bold text-gray-900">Telegram Referral Admin</h1>
-            <div className="flex gap-4">
-              <button className="p-2 text-gray-600 hover:text-gray-900">
-                <Settings className="w-6 h-6" />
-              </button>
+      <header style={{ background: 'rgba(20,20,40,0.95)', borderBottom: '1px solid rgba(99,102,241,0.3)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🏆</div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: '-0.5px' }}>DejenRewards</div>
+              <div style={{ fontSize: 11, color: '#7070a0' }}>Admin Dashboard</div>
             </div>
           </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ padding: '6px 14px', borderRadius: 20, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', fontSize: 13, color: '#a5b4fc' }}>
+              🟢 Live
+            </div>
+            <button onClick={fetchData} style={{ padding: '6px 14px', borderRadius: 20, background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)', color: '#a5b4fc', cursor: 'pointer', fontSize: 13 }}>
+              🔄 Refresh
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Navigation */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'overview'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Overview
+      <nav style={{ background: 'rgba(15,15,26,0.8)', borderBottom: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(8px)' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', display: 'flex', gap: 4 }}>
+          {tabs.map(t => (
+            <button key={t.key} onClick={() => setActiveTab(t.key)}
+              style={{
+                padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600,
+                color: activeTab === t.key ? '#a5b4fc' : '#60607a',
+                borderBottom: activeTab === t.key ? '2px solid #6366f1' : '2px solid transparent',
+                transition: 'all 0.2s',
+              }}>
+              {t.icon} {t.label}
             </button>
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'users'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Users
-            </button>
-            <button
-              onClick={() => setActiveTab('leaderboard')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'leaderboard'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Leaderboard
-            </button>
-            <button
-              onClick={() => setActiveTab('fraud')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'fraud'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Fraud Detection
-            </button>
-          </nav>
+          ))}
         </div>
-      </div>
+      </nav>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 24px' }}>
+
+        {/* ── Overview ── */}
         {activeTab === 'overview' && (
-          <div className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Users</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats?.totalUsers || 0}</p>
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20, marginBottom: 32 }}>
+              {[
+                { icon: '👥', label: 'Total Users',    value: users.length,    color: '#6366f1' },
+                { icon: '✅', label: 'Active Users',   value: activeUsers,     color: '#22c55e' },
+                { icon: '💰', label: 'Points Issued',  value: totalPoints,     color: '#f59e0b' },
+                { icon: '🔗', label: 'Total Referrals',value: totalReferrals,  color: '#8b5cf6' },
+              ].map(card => (
+                <div key={card.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 24 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontSize: 13, color: '#7070a0', marginBottom: 8 }}>{card.label}</div>
+                      <div style={{ fontSize: 32, fontWeight: 800, color: '#fff' }}>{card.value.toLocaleString()}</div>
+                    </div>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: card.color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{card.icon}</div>
                   </div>
-                  <Users className="w-8 h-8 text-blue-600" />
                 </div>
-              </div>
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Points Issued</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats?.totalPointsIssued || 0}</p>
-                  </div>
-                  <Wallet className="w-8 h-8 text-green-600" />
-                </div>
-              </div>
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Points Redeemed</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats?.totalPointsRedeemed || 0}</p>
-                  </div>
-                  <TrendingUp className="w-8 h-8 text-purple-600" />
-                </div>
-              </div>
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Active Points</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats?.activePoints || 0}</p>
-                  </div>
-                  <BarChart3 className="w-8 h-8 text-orange-600" />
-                </div>
-              </div>
+              ))}
             </div>
 
-            {/* Recent Activity */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b">
-                <h2 className="text-lg font-semibold text-gray-900">Recent Users</h2>
+            {/* Recent Users Table */}
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, overflow: 'hidden' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 700, fontSize: 16 }}>Recent Users</span>
+                <span style={{ fontSize: 13, color: '#7070a0' }}>Last 10 registered</span>
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        User
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Balance
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Referrals
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {users.slice(0, 10).map((user) => (
-                      <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {user.firstName || user.username || 'Unknown'}
-                              </div>
-                              <div className="text-sm text-gray-500">@{user.username || 'N/A'}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.isActive ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {user.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {user.walletBalance}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {user.referralsGiven.length}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <UserTable users={users.slice(0, 10)} />
             </div>
           </div>
         )}
 
+        {/* ── Users ── */}
         {activeTab === 'users' && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">All Users</h2>
-              <input
-                type="text"
-                placeholder="Search users..."
-                className="px-4 py-2 border rounded-lg"
-              />
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 16 }}>
+              <span style={{ fontWeight: 700, fontSize: 16, flex: 1 }}>All Users ({users.length})</span>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search by name, username or ID..."
+                style={{ padding: '10px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#e0e0f0', width: 280, outline: 'none', fontSize: 14 }} />
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Telegram ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Balance
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Referrals
-                    </th>
+            <UserTable users={filtered} showId />
+          </div>
+        )}
+
+        {/* ── Leaderboard ── */}
+        {activeTab === 'leaderboard' && (
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <span style={{ fontWeight: 700, fontSize: 16 }}>🏆 Global Leaderboard</span>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(99,102,241,0.08)' }}>
+                    {['Rank','User','Points','Active Refs','Status'].map(h => (
+                      <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 12, color: '#7070a0', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.firstName || user.username || 'Unknown'}
-                        </div>
-                        <div className="text-sm text-gray-500">@{user.username || 'N/A'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.telegramId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.isActive ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {user.isActive ? 'Active' : 'Inactive'}
+                <tbody>
+                  {[...users].sort((a, b) => b.walletBalance - a.walletBalance).map((user, i) => (
+                    <tr key={user.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td style={{ padding: '14px 20px' }}>
+                        <span style={{ fontWeight: 700, fontSize: 18, color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#fb923c' : '#6060a0' }}>
+                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.walletBalance}
+                      <td style={{ padding: '14px 20px' }}>
+                        <div style={{ fontWeight: 600 }}>{user.firstName || user.username || 'Unknown'}</div>
+                        <div style={{ fontSize: 12, color: '#60607a' }}>@{user.username || 'N/A'}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.referralsGiven.length}
+                      <td style={{ padding: '14px 20px', fontWeight: 700, color: '#fbbf24', fontSize: 16 }}>{user.walletBalance}</td>
+                      <td style={{ padding: '14px 20px', color: '#a0a0c0' }}>{user.referralsGiven?.filter((r: any) => r.activeStatus).length || 0}</td>
+                      <td style={{ padding: '14px 20px' }}>
+                        <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: 12, background: user.isActive ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)', color: user.isActive ? '#4ade80' : '#f87171' }}>
+                          {user.isActive ? '● Active' : '○ Inactive'}
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -290,91 +230,141 @@ export default function Dashboard() {
           </div>
         )}
 
-        {activeTab === 'leaderboard' && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">Global Leaderboard</h2>
+        {/* ── Content Management ── */}
+        {activeTab === 'content' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 24 }}>
+            {/* Create Form */}
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 28 }}>
+              <h2 style={{ fontWeight: 700, fontSize: 18, marginBottom: 24 }}>📝 Create Announcement</h2>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 13, color: '#7070a0', display: 'block', marginBottom: 6 }}>Title</label>
+                <input value={newAnn.title} onChange={e => setNewAnn(p => ({ ...p, title: e.target.value }))}
+                  placeholder="Announcement title..."
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#e0e0f0', outline: 'none', fontSize: 14, boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 13, color: '#7070a0', display: 'block', marginBottom: 6 }}>Message</label>
+                <textarea value={newAnn.body} onChange={e => setNewAnn(p => ({ ...p, body: e.target.value }))}
+                  placeholder="Write your announcement here..." rows={5}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#e0e0f0', outline: 'none', fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontSize: 13, color: '#7070a0', display: 'block', marginBottom: 6 }}>Type</label>
+                <select value={newAnn.type} onChange={e => setNewAnn(p => ({ ...p, type: e.target.value as any }))}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: 'rgba(30,30,60,0.9)', border: '1px solid rgba(255,255,255,0.1)', color: '#e0e0f0', outline: 'none', fontSize: 14, boxSizing: 'border-box' }}>
+                  <option value="info">ℹ️ Info</option>
+                  <option value="success">✅ Success</option>
+                  <option value="warning">⚠️ Warning</option>
+                </select>
+              </div>
+              <button onClick={handleCreateAnn} disabled={saving || !newAnn.title || !newAnn.body}
+                style={{ width: '100%', padding: '12px', borderRadius: 10, background: saving ? 'rgba(99,102,241,0.4)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', border: 'none', color: '#fff', fontWeight: 700, fontSize: 15, cursor: saving ? 'not-allowed' : 'pointer' }}>
+                {saving ? '⏳ Saving...' : '🚀 Publish Announcement'}
+              </button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rank
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Points
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Active Referrals
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {users
-                    .sort((a, b) => b.walletBalance - a.walletBalance)
-                    .map((user, index) => (
-                      <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <span className={`text-lg font-bold ${
-                              index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-orange-400' : 'text-gray-600'
-                            }`}>
-                              #{index + 1}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.firstName || user.username || 'Unknown'}
-                          </div>
-                          <div className="text-sm text-gray-500">@{user.username || 'N/A'}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                          {user.walletBalance}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {user.referralsGiven.filter(r => r.activeStatus).length}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
-        {activeTab === 'fraud' && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                Fraud Detection
-              </h2>
-            </div>
-            <div className="p-6">
-              <p className="text-gray-600 mb-4">
-                Suspicious activity detection is enabled. The system monitors for:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-700">
-                <li>Rapid join/leave patterns (more than 5 in 24 hours)</li>
-                <li>Duplicate referral attempts</li>
-                <li>Suspicious referral spikes</li>
-                <li>Re-invite abuse attempts</li>
-              </ul>
-              <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> This feature requires implementation of the fraud detection endpoint
-                  in the backend. Currently, the system logs suspicious events for manual review.
-                </p>
+            {/* Announcements List */}
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, overflow: 'hidden' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontWeight: 700, fontSize: 16 }}>
+                📋 Published Announcements ({announcements.length})
+              </div>
+              <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 500, overflowY: 'auto' }}>
+                {announcements.length === 0 && (
+                  <div style={{ textAlign: 'center', color: '#60607a', padding: '40px 0' }}>
+                    <div style={{ fontSize: 40, marginBottom: 8 }}>📭</div>
+                    <div>No announcements yet. Create one!</div>
+                  </div>
+                )}
+                {announcements.map(ann => {
+                  const colors: Record<string, string> = { info: '#6366f1', success: '#22c55e', warning: '#f59e0b' }
+                  const icons: Record<string, string>  = { info: 'ℹ️', success: '✅', warning: '⚠️' }
+                  return (
+                    <div key={ann.id} style={{ padding: 18, borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: `1px solid ${colors[ann.type]}44`, position: 'relative' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span>{icons[ann.type]}</span>
+                          <span style={{ fontWeight: 700, fontSize: 15 }}>{ann.title}</span>
+                        </div>
+                        <button onClick={() => handleDeleteAnn(ann.id)}
+                          style={{ background: 'rgba(239,68,68,0.15)', border: 'none', color: '#f87171', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>
+                          Delete
+                        </button>
+                      </div>
+                      <p style={{ fontSize: 14, color: '#a0a0c0', margin: 0, lineHeight: 1.6 }}>{ann.body}</p>
+                      <div style={{ marginTop: 10, fontSize: 11, color: '#50507a' }}>{new Date(ann.createdAt).toLocaleString()}</div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
         )}
-      </div>
+
+        {/* ── Fraud ── */}
+        {activeTab === 'fraud' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 28 }}>
+              <h2 style={{ fontWeight: 700, fontSize: 18, marginBottom: 20 }}>🛡️ Fraud Detection</h2>
+              <p style={{ color: '#a0a0c0', lineHeight: 1.7 }}>The system actively monitors for suspicious activity patterns:</p>
+              <ul style={{ color: '#a0a0c0', lineHeight: 2, paddingLeft: 20, marginTop: 12 }}>
+                <li>Rapid join/leave cycling (5+ in 24h)</li>
+                <li>Duplicate referral attempts</li>
+                <li>Suspicious referral spikes</li>
+                <li>Bot-like activity patterns</li>
+                <li>Self-referral attempts</li>
+              </ul>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 16, padding: 28 }}>
+              <h2 style={{ fontWeight: 700, fontSize: 18, marginBottom: 20 }}>⚠️ Suspicious Users</h2>
+              <div style={{ color: '#60607a', textAlign: 'center', paddingTop: 40 }}>
+                <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+                <div>No suspicious activity detected</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}
+
+// ─── Reusable Table Component ─────────────────────────────────────────────────
+function UserTable({ users, showId = false }: { users: User[], showId?: boolean }) {
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ background: 'rgba(99,102,241,0.08)' }}>
+            {['User', showId && 'Telegram ID', 'Status', 'Balance', 'Referrals', 'Joined'].filter(Boolean).map(h => (
+              <th key={h as string} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 12, color: '#7070a0', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {users.map(user => (
+            <tr key={user.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(99,102,241,0.06)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <td style={{ padding: '14px 20px' }}>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{user.firstName || user.username || 'Unknown'}</div>
+                <div style={{ fontSize: 12, color: '#60607a' }}>@{user.username || 'N/A'}</div>
+              </td>
+              {showId && <td style={{ padding: '14px 20px', fontSize: 13, color: '#7070a0', fontFamily: 'monospace' }}>{user.telegramId}</td>}
+              <td style={{ padding: '14px 20px' }}>
+                <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: 12, background: user.isActive ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)', color: user.isActive ? '#4ade80' : '#f87171' }}>
+                  {user.isActive ? '● Active' : '○ Inactive'}
+                </span>
+              </td>
+              <td style={{ padding: '14px 20px', fontWeight: 700, color: '#fbbf24' }}>{user.walletBalance} pts</td>
+              <td style={{ padding: '14px 20px', color: '#a0a0c0' }}>{user.referralsGiven?.length || 0}</td>
+              <td style={{ padding: '14px 20px', fontSize: 12, color: '#60607a' }}>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}</td>
+            </tr>
+          ))}
+          {users.length === 0 && (
+            <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: '#60607a' }}>No users found</td></tr>
+          )}
+        </tbody>
+      </table>
     </div>
   )
 }

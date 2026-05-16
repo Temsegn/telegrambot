@@ -92,19 +92,17 @@ bot.start(async (ctx) => {
     const welcomeText = isMember
       ? `🎉 *Welcome back, ${firstName}!*\n\n` +
         `${pointsLine}\n${invitedLine}\n${activeLine}\n\n` +
-        `You're an active member of ${CHANNEL_ID}.\n` +
         `Share your referral link to earn more points! 🚀`
       : `👋 *Hey ${firstName}! Welcome to DejenRewards!*\n\n` +
         `To activate your account and start earning points:\n\n` +
-        `1️⃣ Join our channel: ${CHANNEL_ID}\n` +
-        `2️⃣ Tap *Verify Membership* below\n` +
-        `3️⃣ Share your link and earn rewards! 🎁`;
+        `1️⃣ Tap *Join Channel* below\n` +
+        `2️⃣ Once you join, your dashboard unlocks *automatically!* 🎁`;
 
     const keyboard = isMember
       ? mainMenu(botUser)
       : Markup.inlineKeyboard([
-          [Markup.button.url(`📢 Join ${CHANNEL_ID}`, `https://t.me/${CHANNEL_ID?.replace('@', '')}`)],
-          [Markup.button.callback('✅ Verify Membership', 'check_membership')],
+          [Markup.button.url('📢 Join Our Channel', `https://t.me/${CHANNEL_ID?.replace('@', '')}`)],
+          [Markup.button.callback('✅ Already Joined? Verify', 'check_membership')],
         ]);
 
     // 5. Send welcome banner with stats
@@ -333,15 +331,59 @@ bot.help((ctx) => {
 bot.on('chat_member', async (ctx) => {
   const { new_chat_member, old_chat_member } = ctx.chatMember;
   const telegramId = BigInt(new_chat_member.user.id);
+  const tgUser     = new_chat_member.user;
   const oldStatus  = old_chat_member.status;
   const newStatus  = new_chat_member.status;
 
   try {
     if (oldStatus === 'left' && ['member', 'administrator', 'creator'].includes(newStatus)) {
-      await axios.post(`${BACKEND_URL}/referrals/join/${telegramId}`);
+      // ── User just joined ──────────────────────────────────────────────────
+      await axios.post(`${BACKEND_URL}/referrals/join/${telegramId}`).catch(() => {});
       console.log(`✅ User ${telegramId} joined the channel`);
+
+      // Fetch their stats and send automatic dashboard message
+      const [user, stats] = await Promise.all([
+        getUser(telegramId),
+        getReferralStats(telegramId),
+      ]);
+
+      const botUser      = ctx.botInfo.username;
+      const firstName    = tgUser.first_name || 'Friend';
+      const referralLink = user?.referralCode ? `https://t.me/${botUser}?start=${user.referralCode}` : null;
+      const balance      = user?.walletBalance ?? 0;
+      const totalInvited = stats?.totalInvited ?? 0;
+      const activeRefs   = stats?.activeMembers ?? 0;
+      const rank         = balance >= 100 ? '🥇 Gold' : balance >= 50 ? '🥈 Silver' : '🥉 Bronze';
+
+      const msg =
+        `🎊 *Welcome to DejenRewards, ${firstName}!*\n\n` +
+        `Your account is now *active*! Here's your dashboard:\n\n` +
+        `━━━━━━━━━━━━━━━━━━\n` +
+        `🏆 *Rank:*           ${rank}\n` +
+        `💰 *Balance:*        ${balance} pts\n` +
+        `👥 *Referrals:*      ${totalInvited} friends\n` +
+        `✅ *Active Members:* ${activeRefs}\n` +
+        `━━━━━━━━━━━━━━━━━━\n\n` +
+        (referralLink ? `📎 *Your Referral Link:*\n\`${referralLink}\`\n\n` : '') +
+        `Share your link to earn *5 pts* per active friend! 🚀`;
+
+      const keyboard = referralLink
+        ? Markup.inlineKeyboard([
+            [Markup.button.webApp('🚀 Open Dashboard', `https://t.me/${botUser}/app`)],
+            [Markup.button.url('📤 Share Referral Link', `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join DejenRewards!')}`)],
+            [Markup.button.callback('💰 My Points', 'get_points'), Markup.button.callback('🔗 My Referral', 'get_referral')],
+          ])
+        : mainMenu(botUser);
+
+      // Send message directly to the user's DM
+      await ctx.telegram.sendMessage(Number(telegramId), msg, {
+        parse_mode: 'Markdown',
+        ...keyboard,
+      }).catch(err => console.warn('Could not DM user:', err.message));
+
     } else if (['member', 'administrator', 'creator'].includes(oldStatus) && newStatus === 'left') {
-      await axios.post(`${BACKEND_URL}/referrals/leave/${telegramId}`);
+      // ── User left ─────────────────────────────────────────────────────────
+      await axios.post(`${BACKEND_URL}/referrals/leave/${telegramId}`).catch(() => {});
       console.log(`🚪 User ${telegramId} left the channel`);
     }
   } catch (error) {

@@ -1,0 +1,75 @@
+services:
+  # ─── 1. Backend API (NestJS) ──────────────────────────────────────────────
+  - type: web
+    name: dejenrewards-backend
+    env: node
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate --schema=./prisma/schema.prisma && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: DATABASE_URL
+        value: "postgresql://neondb_owner:npg_MVeUsJk8j4RS@ep-broad-brook-an6n1ie8-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+      - key: TELEGRAM_BOT_TOKEN
+        value: "8878260053:AAFnUgkU_hjJRedU2SJq_a81proq7gwvB0U"
+      - key: TELEGRAM_BOT_USERNAME
+        value: "userdejenbot"
+      - key: TELEGRAM_CHANNEL_ID
+        value: "@userdejendejen"
+      - key: ALLOWED_ORIGINS
+        value: "https://dejenrewards-miniapp.onrender.com,https://dejenrewards-admin.onrender.com"
+
+  # ─── 2. Admin Dashboard (Next.js) ────────────────────────────────────────
+  - type: web
+    name: dejenrewards-admin
+    env: node
+    region: oregon
+    rootDir: admin-dashboard
+    buildCommand: npm install && npm run build
+    startCommand: node .next/standalone/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: HOSTNAME
+        value: "0.0.0.0"
+      - key: NEXT_PUBLIC_BACKEND_URL
+        value: "https://dejenrewards-backend.onrender.com"
+
+  # ─── 3. Telegram Bot (Background Worker) ─────────────────────────────────
+  - type: worker
+    name: dejenrewards-bot
+    env: node
+    region: oregon
+    rootDir: bot
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TELEGRAM_BOT_TOKEN
+        value: "8878260053:AAFnUgkU_hjJRedU2SJq_a81proq7gwvB0U"
+      - key: TELEGRAM_BOT_USERNAME
+        value: "userdejenbot"
+      - key: TELEGRAM_CHANNEL_ID
+        value: "@userdejendejen"
+      - key: BACKEND_URL
+        value: "https://dejenrewards-backend.onrender.com"
+      - key: MINI_APP_URL
+        value: "https://t.me/userdejenbot/app"
+
+  # ─── 4. Mini App (Vite Static Site) ──────────────────────────────────────
+  - type: static
+    name: dejenrewards-miniapp
+    region: oregon
+    rootDir: mini-app
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: "https://dejenrewards-backend.onrender.com"
