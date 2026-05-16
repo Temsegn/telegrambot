@@ -14,6 +14,16 @@ if (!BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN is required');
 const bot = new Telegraf(BOT_TOKEN);
 const WELCOME_IMG = path.resolve(__dirname, '../assets/welcome.png');
 
+// --- Health Check Server for Render Web Service ---
+const http = require('http');
+const PORT = process.env.PORT || 10000;
+http.createServer((req: any, res: any) => {
+  res.writeHead(200);
+  res.end('Bot is running!');
+}).listen(PORT);
+console.log(`Health check server listening on port ${PORT}`);
+// --------------------------------------------------
+
 bot.use((ctx, next) => {
   console.log(`Update from ${ctx.from?.id}: ${ctx.updateType}`);
   return next();

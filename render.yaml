@@ -39,7 +39,7 @@ services:
       - key: HOSTNAME
         value: "0.0.0.0"
       - key: NEXT_PUBLIC_BACKEND_URL
-        value: "https://dejenrewards-backend.onrender.com"
+        value: "https://telegrambot-dppa.onrender.com"
 
   # ─── 3. Telegram Bot (Background Worker) ─────────────────────────────────
   - type: worker
@@ -59,7 +59,7 @@ services:
       - key: TELEGRAM_CHANNEL_ID
         value: "@userdejendejen"
       - key: BACKEND_URL
-        value: "https://dejenrewards-backend.onrender.com"
+        value: "https://telegrambot-dppa.onrender.com"
       - key: MINI_APP_URL
         value: "https://t.me/userdejenbot/app"
 
@@ -72,4 +72,4 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_BACKEND_URL
-        value: "https://dejenrewards-backend.onrender.com"
+        value: "https://telegrambot-dppa.onrender.com"
