@@ -12,18 +12,16 @@ const MINI_APP_URL = 'https://telegrambot-1-b7u3.onrender.com';
 const bot = new Telegraf(BOT_TOKEN);
 const WELCOME_IMG = path.resolve(__dirname, '../assets/welcome.png');
 
-// --- Health Check Server (only when PORT is provided, i.e. web service mode) ---
-const PORT = process.env.PORT;
-if (PORT) {
-  const http = require('http');
-  http.createServer((req: any, res: any) => {
-    res.writeHead(200);
-    res.end('Bot is running!');
-  }).listen(PORT, () => {
-    console.log(`Health check server listening on port ${PORT}`);
-  });
-}
-// --------------------------------------------------
+// --- Health Check Server — must always bind for Render web service ---
+const http = require('http');
+const PORT = process.env.PORT || 10000;
+http.createServer((req: any, res: any) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Bot is running!');
+}).listen(PORT, () => {
+  console.log(`✅ Health check server listening on port ${PORT}`);
+});
+// -------------------------------------------------------------------
 
 bot.use((ctx, next) => {
   console.log(`Update from ${ctx.from?.id}: ${ctx.updateType}`);
