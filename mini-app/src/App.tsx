@@ -98,14 +98,6 @@ export default function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const checkChannelMembership = () => {
-    if (!user || !user.isActive) {
-      alert('Please join the channel first to perform this action!');
-      return false;
-    }
-    return true;
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'ACTIVE_MEMBER':
@@ -172,8 +164,17 @@ export default function App() {
                 <h2 className="text-lg font-semibold text-gray-800">Total Balance</h2>
                 <Wallet className="w-6 h-6 text-blue-600 animate-bounce" />
               </div>
-              <div className="text-5xl font-bold text-blue-600 mb-2">{user.walletBalance}</div>
-              <p className="text-gray-600">Points</p>
+              {user.isActive ? (
+                <>
+                  <div className="text-5xl font-bold text-blue-600 mb-2">{user.walletBalance}</div>
+                  <p className="text-gray-600">Points</p>
+                </>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold text-red-600 mb-2">Join First</div>
+                  <p className="text-gray-600">Please join the channel to view your balance</p>
+                </>
+              )}
             </div>
 
             {/* Stats Grid */}
@@ -324,11 +325,7 @@ export default function App() {
                   className="flex-1 px-4 py-3 border-2 border-blue-200 rounded-xl bg-gray-50 text-sm focus:outline-none focus:border-blue-500"
                 />
                 <button
-                  onClick={() => {
-                    if (checkChannelMembership()) {
-                      copyReferralLink();
-                    }
-                  }}
+                  onClick={copyReferralLink}
                   className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105"
                 >
                   {copied ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -345,10 +342,8 @@ export default function App() {
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => {
-                    if (checkChannelMembership()) {
-                      const link = `https://t.me/${'userdejenbot'}?start=${user.referralCode}`;
-                      window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}`, '_blank');
-                    }
+                    const link = `https://t.me/${'userdejenbot'}?start=${user.referralCode}`;
+                    window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}`, '_blank');
                   }}
                   className="flex items-center justify-center gap-2 p-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-300 transform hover:scale-105"
                 >
@@ -356,11 +351,7 @@ export default function App() {
                   Share on Telegram
                 </button>
                 <button
-                  onClick={() => {
-                    if (checkChannelMembership()) {
-                      copyReferralLink();
-                    }
-                  }}
+                  onClick={copyReferralLink}
                   className="flex items-center justify-center gap-2 p-4 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition-all duration-300 transform hover:scale-105"
                 >
                   <Copy className="w-5 h-5" />

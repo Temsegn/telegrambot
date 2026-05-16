@@ -179,6 +179,22 @@ bot.action('show_balance', async (ctx) => {
   const telegramId = BigInt(ctx.from!.id);
   const botUser = ctx.botInfo.username;
 
+  const isMember = await checkChannelMembership(telegramId);
+
+  if (!isMember) {
+    const channelUrl = CHANNEL_ID ? `https://t.me/${CHANNEL_ID.replace('@', '')}` : null;
+    return ctx.reply(
+      `❌ *Join First*\n\n` +
+      `Please join the channel to view your balance and start earning points!`,
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          ...(channelUrl ? [[Markup.button.url('📢 Join Channel', channelUrl)]] : []),
+        ]),
+      }
+    );
+  }
+
   const [user, stats] = await Promise.all([getUser(telegramId), getReferralStats(telegramId)]);
 
   if (!user) return ctx.reply('❌ Not registered. Send /start first.');
