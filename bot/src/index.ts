@@ -79,12 +79,24 @@ bot.start(async (ctx) => {
   const referralCode = ctx.message.text.split(' ')[1];
 
   try {
-    // 1. Register / get user
-    await axios.post(`${BACKEND_URL}/users`, {
-      telegramId: telegramId.toString(), username, firstName, lastName,
-    }, { timeout: 60000 });
+    // 1. Send quick welcome message first
+    await ctx.reply(`👋 Welcome, ${firstName}! Loading your data...`);
 
-    // 2. Handle referral code
+    // 2. Run all API calls in parallel for speed
+    const [userRes, user, stats, isMember] = await Promise.all([
+      // Register / get user
+      axios.post(`${BACKEND_URL}/users`, {
+        telegramId: telegramId.toString(), username, firstName, lastName,
+      }, { timeout: 60000 }).catch(() => null),
+      // Fetch user data
+      getUser(telegramId),
+      // Fetch stats
+      getReferralStats(telegramId),
+      // Check channel membership
+      checkChannelMembership(telegramId),
+    ]);
+
+    // 3. Handle referral code in parallel
     if (referralCode) {
       try {
         const inviterRes = await axios.get(`${BACKEND_URL}/users/referral/${referralCode}`, { timeout: 60000 });
@@ -99,11 +111,7 @@ bot.start(async (ctx) => {
       } catch (e) { console.error('Referral error:', e); }
     }
 
-    // 3. Fetch stats
-    const user = await getUser(telegramId);
-    const stats = await getReferralStats(telegramId);
-    const isMember = await checkChannelMembership(telegramId);
-
+    // 4. Mark as joined if member
     if (isMember) {
       await axios.post(`${BACKEND_URL}/referrals/join/${telegramId}`).catch(() => { });
     }
@@ -116,7 +124,7 @@ bot.start(async (ctx) => {
       ? `https://t.me/${botUser}?start=${user.referralCode}`
       : null;
 
-    // 4. Build message — everything in one view
+    // 5. Build message — everything in one view
     const caption = isMember
       ? `🎉 *Welcome back, ${firstName}!*\n\n` +
       `━━━━━━━━━━━━━━━━━━\n` +
@@ -132,7 +140,7 @@ bot.start(async (ctx) => {
       `Join our channel to activate your account\n` +
       `and start earning rewards! 🎁`;
 
-    // 5. Buttons — all actions, no check button
+    // 6. Buttons — all actions, no check button
     const shareText = refLink ? encodeURIComponent(`💎 Join DejenRewards and earn points!\n${refLink}`) : '';
 
     const channelUrl = CHANNEL_ID ? `https://t.me/${CHANNEL_ID.replace('@', '')}` : null;
@@ -149,7 +157,7 @@ bot.start(async (ctx) => {
         ...(MINI_APP_URL ? [[Markup.button.webApp('🚀 Open Mini App', MINI_APP_URL)]] : []),
       ]);
 
-    // 6. Send with image
+    // 7. Send with image
     try {
       await ctx.replyWithPhoto(
         { source: WELCOME_IMG },
