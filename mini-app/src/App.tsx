@@ -35,8 +35,8 @@ interface Referral {
   activeStatus: boolean;
 }
 
-const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000').replace(/\/$/, '');
-const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME || 'your_bot';
+const BACKEND_URL = 'https://telegrambot-backend-37gb.onrender.com';
+const BOT_USERNAME = 'userdejenbot';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
