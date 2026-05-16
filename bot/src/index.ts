@@ -31,14 +31,14 @@ bot.use((ctx, next) => {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 async function getUser(telegramId: bigint) {
   try {
-    const res = await axios.get(`${BACKEND_URL}/users/${telegramId}`, { timeout: 8000 });
+    const res = await axios.get(`${BACKEND_URL}/users/${telegramId}`, { timeout: 60000 });
     return res.data?.error ? null : res.data;
   } catch { return null; }
 }
 
 async function getReferralStats(telegramId: bigint) {
   try {
-    const res = await axios.get(`${BACKEND_URL}/referrals/stats/${telegramId}`, { timeout: 8000 });
+    const res = await axios.get(`${BACKEND_URL}/referrals/stats/${telegramId}`, { timeout: 60000 });
     return res.data;
   } catch { return null; }
 }
@@ -48,7 +48,7 @@ async function checkChannelMembership(userId: bigint): Promise<boolean> {
   try {
     const res = await axios.get(
       `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember`,
-      { params: { chat_id: CHANNEL_ID, user_id: userId.toString() }, timeout: 10000 }
+      { params: { chat_id: CHANNEL_ID, user_id: userId.toString() }, timeout: 60000 }
     );
     return ['member', 'administrator', 'creator'].includes(res.data.result?.status);
   } catch (error: any) {
@@ -82,19 +82,19 @@ bot.start(async (ctx) => {
     // 1. Register / get user
     await axios.post(`${BACKEND_URL}/users`, {
       telegramId: telegramId.toString(), username, firstName, lastName,
-    }, { timeout: 8000 });
+    }, { timeout: 60000 });
 
     // 2. Handle referral code
     if (referralCode) {
       try {
-        const inviterRes = await axios.get(`${BACKEND_URL}/users/referral/${referralCode}`, { timeout: 8000 });
+        const inviterRes = await axios.get(`${BACKEND_URL}/users/referral/${referralCode}`, { timeout: 60000 });
         const inviterId = inviterRes.data?.telegramId;
         // Prevent self-referral
         if (inviterId && inviterId !== telegramId.toString()) {
           await axios.post(`${BACKEND_URL}/referrals/create`, {
             inviterTelegramId: inviterId,
             invitedTelegramId: telegramId.toString(),
-          }, { timeout: 8000 });
+          }, { timeout: 60000 });
         }
       } catch (e) { console.error('Referral error:', e); }
     }
