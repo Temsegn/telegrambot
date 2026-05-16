@@ -35,7 +35,8 @@ interface Referral {
   activeStatus: boolean;
 }
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000').replace(/\/$/, '');
+const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME || 'your_bot';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -91,8 +92,7 @@ export default function App() {
 
   const copyReferralLink = () => {
     if (!user) return;
-    
-    const link = `https://t.me/${window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'your_bot'}?start=${user.referralCode}`;
+    const link = `https://t.me/${BOT_USERNAME}?start=${user.referralCode}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -126,7 +126,10 @@ export default function App() {
         <div className="text-center">
           <div style={{ fontSize: 64, marginBottom: 16 }}>🤖</div>
           <p style={{ color: '#f87171', marginBottom: 8, fontWeight: 600, fontSize: 18 }}>Unable to load user data</p>
-          <p style={{ color: '#94a3b8', marginBottom: 24, fontSize: 14 }}>Please open this app from Telegram</p>
+          <p style={{ color: '#94a3b8', marginBottom: 8, fontSize: 14 }}>Please open this app from Telegram</p>
+          <p style={{ color: '#64748b', marginBottom: 24, fontSize: 12 }}>
+            Or add <code style={{ color: '#a5b4fc' }}>?telegramId=YOUR_ID</code> to the URL for testing
+          </p>
           <button onClick={fetchData}
             style={{ padding: '10px 24px', borderRadius: 10, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', border: 'none', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}>
             🔄 Retry
@@ -241,7 +244,7 @@ export default function App() {
                 <input
                   type="text"
                   readOnly
-                  value={`https://t.me/${window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'your_bot'}?start=${user.referralCode}`}
+                  value={`https://t.me/${BOT_USERNAME}?start=${user.referralCode}`}
                   className="flex-1 px-4 py-2 border rounded-lg bg-gray-50 text-sm"
                 />
                 <button

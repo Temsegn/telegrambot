@@ -7,8 +7,8 @@ async function bootstrap() {
   
   app.enableCors({
     origin: process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(',')
-      : ['http://localhost:3000', 'http://localhost:5000', 'http://localhost:5173'],
+      ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+      : true, // Allow all origins — tighten via ALLOWED_ORIGINS env var in production
     credentials: true,
   });
   

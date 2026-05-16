@@ -21,7 +21,8 @@ services:
       - key: TELEGRAM_CHANNEL_ID
         value: "@userdejendejen"
       - key: ALLOWED_ORIGINS
-        value: "https://dejenrewards-miniapp.onrender.com,https://dejenrewards-admin.onrender.com"
+        # actual mini-app + admin URLs on Render
+        value: "https://telegrambot-1-b7u3.onrender.com,https://telegrambot-dppa.onrender.com,https://dejenrewards-miniapp.onrender.com,https://dejenrewards-admin.onrender.com"
 
   # ─── 2. Admin Dashboard (Next.js) ────────────────────────────────────────
   - type: web
@@ -39,7 +40,8 @@ services:
       - key: HOSTNAME
         value: "0.0.0.0"
       - key: NEXT_PUBLIC_BACKEND_URL
-        value: "https://telegrambot-dppa.onrender.com"
+        # backend service URL (not the bot URL)
+        value: "https://telegrambot-backend-37gb.onrender.com"
 
   # ─── 3. Telegram Bot (Background Worker) ─────────────────────────────────
   - type: worker
@@ -59,9 +61,11 @@ services:
       - key: TELEGRAM_CHANNEL_ID
         value: "@userdejendejen"
       - key: BACKEND_URL
-        value: "https://telegrambot-dppa.onrender.com"
+        # backend service URL (not the bot's own URL)
+        value: "https://telegrambot-backend-37gb.onrender.com"
       - key: MINI_APP_URL
-        value: "https://t.me/userdejenbot/app"
+        # direct Render URL — avoids BUTTON_URL_INVALID from t.me/bot/app shortlink
+        value: "https://telegrambot-1-b7u3.onrender.com"
 
   # ─── 4. Mini App (Vite Static Site) ──────────────────────────────────────
   - type: static
@@ -72,4 +76,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_BACKEND_URL
-        value: "https://telegrambot-dppa.onrender.com"
+        # backend service URL (not the bot URL)
+        value: "https://telegrambot-backend-37gb.onrender.com"
+      - key: VITE_BOT_USERNAME
+        value: "userdejenbot"

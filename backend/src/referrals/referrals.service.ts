@@ -16,24 +16,24 @@ export class ReferralsService {
       throw new ConflictException('Cannot refer yourself');
     }
 
-    // Check if invited user already has an inviter
-    const existingReferral = await this.prisma.referral.findUnique({
-      where: { invitedId: invitedTelegramId.toString() },
-    });
-
-    if (existingReferral) {
-      throw new ConflictException('User already has an inviter');
-    }
-
     // Get or create inviter
     const inviter = await this.usersService.findByTelegramId(inviterTelegramId);
     if (!inviter) {
       throw new NotFoundException('Inviter not found');
     }
 
-    // Get or create invited user
+    // Get or create invited user (create is upsert-safe)
     const invited = await this.usersService.create(invitedTelegramId);
-    
+
+    // Check if invited user already has a referral (using their UUID)
+    const existingReferral = await this.prisma.referral.findUnique({
+      where: { invitedId: invited.id },
+    });
+
+    if (existingReferral) {
+      throw new ConflictException('User already has an inviter');
+    }
+
     // Update invited user status
     await this.usersService.updateStatus(invited.id, UserStatus.CLICKED_INVITE);
 
