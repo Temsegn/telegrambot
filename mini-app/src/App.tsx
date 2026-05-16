@@ -163,7 +163,7 @@ export default function App() {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 relative">
         {activeTab === 'wallet' && (
           <div className="space-y-4 animate-fade-in">
             {/* Balance Card */}
@@ -393,6 +393,35 @@ export default function App() {
         )}
 
       </div>
+
+      {/* Channel Membership Block Overlay */}
+      {!user.isActive && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl animate-fade-in">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <XCircle className="w-12 h-12 text-red-600 animate-pulse" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Join Channel First</h2>
+            <p className="text-gray-600 mb-6">
+              You must be a member of the channel to use this app. Please join the channel to continue earning points and using all features.
+            </p>
+            <button
+              onClick={() => {
+                window.open('https://t.me/userdejendejen', '_blank');
+              }}
+              className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105"
+            >
+              Join Channel
+            </button>
+            <button
+              onClick={fetchData}
+              className="w-full mt-3 py-3 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Refresh Status
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Curved Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50">
