@@ -268,8 +268,14 @@ bot.on('chat_member', async (ctx) => {
   try {
     if (oldStatus === 'left' && ['member', 'administrator', 'creator'].includes(newStatus)) {
       // User just joined
-      await axios.post(`${BACKEND_URL}/referrals/join/${telegramId}`).catch(() => { });
-      console.log(`✅ User ${telegramId} joined the channel`);
+      let isRejoin = false;
+      try {
+        const joinRes = await axios.post(`${BACKEND_URL}/referrals/join/${telegramId}`);
+        if (joinRes.data && joinRes.data.isRejoin) {
+          isRejoin = true;
+        }
+      } catch (err) { }
+      console.log(`✅ User ${telegramId} joined the channel (rejoin: ${isRejoin})`);
 
       const [user, stats] = await Promise.all([getUser(telegramId), getReferralStats(telegramId)]);
       const botUser = ctx.botInfo.username;
@@ -282,7 +288,7 @@ bot.on('chat_member', async (ctx) => {
       const shareText = refLink ? encodeURIComponent(`💎 Join DejenRewards!\n${refLink}`) : '';
 
       const msg =
-        `🎊 *Welcome, ${firstName}!*\n\n` +
+        (isRejoin ? `🎊 *Welcome back, ${firstName}!*\n\n` : `🎊 *Welcome, ${firstName}!*\n\n`) +
         `Your account is now *active*!\n\n` +
         `━━━━━━━━━━━━━━━━━━\n` +
         `🏆 Rank:  ${rank}\n` +

@@ -69,19 +69,23 @@ export class ReferralsService {
       return { message: 'User marked as joined (no referral)', userId: invited.id };
     }
 
+    const isRejoin = referral.joinedAt !== null;
+
     // Update referral
     const updatedReferral = await this.prisma.referral.update({
       where: { id: referral.id },
       data: {
-        joinedAt: new Date(),
+        joinedAt: referral.joinedAt || new Date(),
         activeStatus: true,
       },
     });
 
-    // Award points to inviter (5 points for join)
-    await this.usersService.updateWalletBalance(referral.inviterId, 5);
+    // Award points to inviter (5 points for join) only if first time
+    if (!isRejoin) {
+      await this.usersService.updateWalletBalance(referral.inviterId, 5);
+    }
 
-    return updatedReferral;
+    return { ...updatedReferral, isRejoin };
   }
 
   async markAsLeft(invitedTelegramId: bigint) {
