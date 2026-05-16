@@ -11,9 +11,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
   app.enableCors({
-    origin: 'https://telegrambot-1-b7u3.onrender.com,https://telegrambot-dppa.onrender.com,https://dejenrewards-miniapp.onrender.com,https://dejenrewards-admin.onrender.com'
-      ? 'https://telegrambot-1-b7u3.onrender.com,https://telegrambot-dppa.onrender.com,https://dejenrewards-miniapp.onrender.com,https://dejenrewards-admin.onrender.com'.split(',').map(o => o.trim())
-      : true, // Allow all origins — tighten via ALLOWED_ORIGINS env var in production
+    origin: [
+      'https://telegrambot-1-b7u3.onrender.com',
+      'https://telegrambot-dppa.onrender.com',
+      'https://dejenrewards-miniapp.onrender.com',
+      'https://dejenrewards-admin.onrender.com'
+    ],
     credentials: true,
   });
   
