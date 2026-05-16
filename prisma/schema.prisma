@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  CLICKED_INVITE
+  STARTED_BOT
+  JOINED_CHANNEL
+  ACTIVE_MEMBER
+  LEFT_CHANNEL
+  REJOINED
+}
+
+enum EventType {
+  CLICKED
+  STARTED
+  JOINED
+  LEFT
+  REJOINED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+model User {
+  id            String      @id @default(cuid())
+  telegramId    BigInt      @unique
+  username      String?
+  firstName     String?
+  lastName      String?
+  referralCode  String      @unique
+  walletBalance Int         @default(0)
+  isActive      Boolean     @default(false)
+  status        UserStatus  @default(CLICKED_INVITE)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  referralsGiven    Referral[] @relation("Inviter")
+  referralsReceived Referral[] @relation("Invited")
+  events            Event[]
+  walletTransactions WalletTransaction[]
+
+  @@index([telegramId])
+  @@index([referralCode])
+}
+
+model Referral {
+  id           String      @id @default(cuid())
+  inviterId    String
+  invitedId    String      @unique
+  joinedAt     DateTime?
+  leftAt       DateTime?
+  activeStatus Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Relations
+  inviter User @relation("Inviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invited User @relation("Invited", fields: [invitedId], references: [id], onDelete: Cascade)
+
+  @@unique([inviterId, invitedId])
+  @@index([inviterId])
+  @@index([invitedId])
+}
+
+model Event {
+  id        String    @id @default(cuid())
+  userId    String
+  eventType EventType
+  timestamp DateTime  @default(now())
+  metadata  Json?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([timestamp])
+}
+
+model WalletTransaction {
+  id        String          @id @default(cuid())
+  userId    String
+  amount    Int
+  type      TransactionType
+  reason    String
+  createdAt DateTime        @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
