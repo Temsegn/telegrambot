@@ -156,14 +156,25 @@ export class ReferralsService {
       },
     });
 
+    const joinedCount = referrals.filter(r => r.joinedAt !== null).length;
+    
+    // Recalculate wallet balance based on actual joined referrals (5 points per joined user)
+    const expectedBalance = joinedCount * 5;
+    if (user.walletBalance !== expectedBalance) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { walletBalance: expectedBalance },
+      });
+    }
+
     const stats = {
       totalInvited: referrals.length,
-      joinedChannel: referrals.filter(r => r.joinedAt !== null).length,
+      joinedChannel: joinedCount,
       activeMembers: referrals.filter(r => r.activeStatus === true).length,
       leftChannel: referrals.filter(r => r.leftAt !== null).length,
       neverJoined: referrals.filter(r => r.joinedAt === null).length,
       conversionRate: referrals.length > 0 
-        ? (referrals.filter(r => r.joinedAt !== null).length / referrals.length * 100).toFixed(2)
+        ? (joinedCount / referrals.length * 100).toFixed(2)
         : 0,
     };
 

@@ -31,7 +31,7 @@ export class UsersService {
   }
 
   async findByTelegramId(telegramId: bigint) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { telegramId },
       include: {
         referralsGiven: true,
@@ -40,6 +40,21 @@ export class UsersService {
         walletTransactions: true,
       },
     });
+
+    if (user) {
+      // Recalculate wallet balance based on actual joined referrals (5 points per joined user)
+      const joinedCount = user.referralsGiven.filter(r => r.joinedAt !== null).length;
+      const expectedBalance = joinedCount * 5;
+      if (user.walletBalance !== expectedBalance) {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { walletBalance: expectedBalance },
+        });
+        user.walletBalance = expectedBalance;
+      }
+    }
+
+    return user;
   }
 
   async findByReferralCode(referralCode: string) {
